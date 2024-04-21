@@ -10,6 +10,8 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 from bs4 import BeautifulSoup
 
+from .model import NikeFootballMatchSnapshot
+
 #import base
 #from base import Crawler
 
@@ -19,27 +21,30 @@ BR_STATS_MATCH_FORM = '/stats_match_form/'
 BR_MATCH_TIMELINE_DELTA = '/match_timelinedelta/'
 BR_MATCH_BOOKMAKER_ODDS = '/match_bookmakerodds/'
 BR_MATCH_INFO = '/match_info/'
-class NikeFootballMatchSnapshot:
 
-    def __init__(self, id_match, betradar_id_match, tournament, home_team, away_team, total_score, period, match_time,
-                 match_details, match_details_extended, stats_match_form, match_timeline_delta, match_bookmaker_odds,
-                 match_info):
 
-        self.id_match = id_match
-        self.betradar_id_match = betradar_id_match
-        self.tournament = tournament
-        self.home_team = home_team
-        self.away_team = away_team
-        self.total_score = total_score
-        self.period = period
-        self.match_time = match_time
+#class NikeFootballMatchSnapshot:
+#
+#    def __init__(self, id_match, betradar_id_match, tournament, home_team, away_team, total_score, period, match_time,
+#                 match_details, match_details_extended, stats_match_form, match_timeline_delta, match_bookmaker_odds,
+#                 match_info):
+#
+#        self.id_match = id_match
+#        self.betradar_id_match = betradar_id_match
+#        self.tournament = tournament
+#        self.home_team = home_team
+#        self.away_team = away_team
+#        self.total_score = total_score
+#        self.period = period
+#        self.match_time = match_time
+#
+#        self.match_details = match_details
+#        self.match_details_extended = match_details_extended
+#        self.stats_match_form = stats_match_form
+#        self.match_timeline_delta = match_timeline_delta
+#        self.match_bookmaker_odds = match_bookmaker_odds
+#        self.match_info = match_info
 
-        self.match_details = match_details
-        self.match_details_extended = match_details_extended
-        self.stats_match_form = stats_match_form
-        self.match_timeline_delta = match_timeline_delta
-        self.match_bookmaker_odds = match_bookmaker_odds
-        self.match_info = match_info
 
 class NikeCrawler:
 
@@ -60,6 +65,10 @@ class NikeCrawler:
             #desired_capabilities = capabilities,
         )
         self._driver.implicitly_wait(5)
+
+    def __del__(self):
+        self._driver.close()
+        self._driver.quit()
 
     def get_current_live_matches(self):
         self._driver.get(self._NIKE_LIVE_FOOTBALL_BASE_URL)
@@ -84,30 +93,32 @@ class NikeCrawler:
         try:
             cookies_button = self._driver.find_element(By.ID, 'CybotCookiebotDialogBodyLevelButtonLevelOptinAllowAll')
             cookies_button.click()
+            time.sleep(1)
         except:
             pass
 
         page_source = self._driver.page_source
         soup = BeautifulSoup(page_source, 'lxml')
 
+        tournament, home_team, away_team, total_score = (None, None, None, None)
+
         try:
             tournament = soup.find('span', {'class': 'ellipsis c-white px-10'}).contents[0]
             home_team = soup.find('span', {'data-atid': 'scoreboard-opponent-home'}).contents[0]
             away_team = soup.find('span', {'data-atid': 'scoreboard-opponent-away'}).contents[0]
             total_score = soup.find('span', {'data-atid': 'tlv-matchDetail-totalScore'}).contents[0]
-        except Exception as exc:
-            pass
+        except Exception:
+            return None
 
         try:
 
             statistic_button = self._driver.find_element(By.XPATH, "//button[@data-tab-id='generalStatistics']")
             statistic_button.click()
 
-            match_details = None
-            match_details_extended = None
-            stats_match_form = None
-            match_timeline_delta = None
-            match_bookmaker_odds = None
+            time.sleep(5)
+
+            (match_details, match_details_extended, stats_match_form,
+             match_timeline_delta, match_bookmaker_odds, match_info) = (None, None, None, None, None, None)
 
             for request in self._driver.requests:
                 if request.response:
@@ -133,9 +144,13 @@ class NikeCrawler:
                 ):
                     break
 
+            period, match_time, betradar_id_match = (None, None, None)
             try:
                 page_source = self._driver.page_source
                 soup = BeautifulSoup(page_source, 'lxml')
+
+                bets_source_tag = soup.find('div', {'data-atid': 'tlv-detail-bets'})
+                bets_source = str(bets_source_tag.contents)
 
                 match_timer = soup.find('div', {'data-atid': 'match-timer'})
                 period = match_timer.contents[0].contents[0]
@@ -143,7 +158,7 @@ class NikeCrawler:
 
                 stats = soup.find_all('div', {'data-sr-widget': 'match.generalstatistics'})
                 betradar_id_match = json.loads(stats[0].attrs['data-sr-input-props'])['matchId']
-            except Exception as ttt:
+            except Exception:
                 pass
 
             result = NikeFootballMatchSnapshot(
@@ -160,12 +175,16 @@ class NikeCrawler:
                 stats_match_form=stats_match_form,
                 match_bookmaker_odds=match_bookmaker_odds,
                 match_timeline_delta=match_timeline_delta,
-                match_info=match_info
+                match_info=match_info,
+                page_source=gzip.compress(bytes(bets_source, 'utf8'))
             )
 
-            match_scoreboard = soup.find('div', {'data-sr-widget': 'match.scoreboard'})
-            if (match_scoreboard):
-                print(match_scoreboard)
+            result.save()
+            return result
+
+            #match_scoreboard = soup.find('div', {'data-sr-widget': 'match.scoreboard'})
+            #if (match_scoreboard):
+            #    print(match_scoreboard)
 
             #statistic_button = self._driver.find_element(By.XPATH, "//button[@data-tab-id='generalStatistics']")
             #statistic_button = self._driver.find_element(By.XPATH, "//button[@data-tab-id='headToHead']")
@@ -213,4 +232,4 @@ class NikeCrawler:
 
         except Exception as e:
             pass
-
+        return None
