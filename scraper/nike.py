@@ -10,7 +10,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 from bs4 import BeautifulSoup
 
-from .model import NikeFootballMatchSnapshot
+from model import NikeFootballMatchSnapshot
 
 #import base
 #from base import Crawler
@@ -89,7 +89,10 @@ class NikeCrawler:
         return matches
 
     def process_match(self, id_match):
-        self._driver.get(self._NIKE_LIVE_FOOTBALL_MATCH_URL.format(id_match))
+
+        match_url = self._NIKE_LIVE_FOOTBALL_MATCH_URL.format(id_match)
+        self._driver.get(match_url)
+
         try:
             cookies_button = self._driver.find_element(By.ID, 'CybotCookiebotDialogBodyLevelButtonLevelOptinAllowAll')
             cookies_button.click()
@@ -97,139 +100,89 @@ class NikeCrawler:
         except:
             pass
 
-        page_source = self._driver.page_source
-        soup = BeautifulSoup(page_source, 'lxml')
+        while(self._driver.current_url == match_url):
+            page_source = self._driver.page_source
+            soup = BeautifulSoup(page_source, 'lxml')
 
-        tournament, home_team, away_team, total_score = (None, None, None, None)
+            tournament, home_team, away_team, total_score = (None, None, None, None)
 
-        try:
-            tournament = soup.find('span', {'class': 'ellipsis c-white px-10'}).contents[0]
-            home_team = soup.find('span', {'data-atid': 'scoreboard-opponent-home'}).contents[0]
-            away_team = soup.find('span', {'data-atid': 'scoreboard-opponent-away'}).contents[0]
-            total_score = soup.find('span', {'data-atid': 'tlv-matchDetail-totalScore'}).contents[0]
-        except Exception:
-            return None
-
-        try:
-
-            statistic_button = self._driver.find_element(By.XPATH, "//button[@data-tab-id='generalStatistics']")
-            statistic_button.click()
-
-            time.sleep(5)
-
-            (match_details, match_details_extended, stats_match_form,
-             match_timeline_delta, match_bookmaker_odds, match_info) = (None, None, None, None, None, None)
-
-            for request in self._driver.requests:
-                if request.response:
-                    # str_data = gzip.decompress(request.response.body)
-                    # data = json.loads(str_data)
-                    # print(data)
-                    if BR_MATCH_DETAILS in request.url:
-                        match_details = request.response.body
-                    if BR_MATCH_DETAILS_EXTENDED in request.url:
-                        match_details_extended = request.response.body
-                    if BR_MATCH_INFO in request.url:
-                        match_info = request.response.body
-                    if BR_STATS_MATCH_FORM in request.url:
-                        stats_match_form = request.response.body
-                    if BR_MATCH_BOOKMAKER_ODDS in request.url:
-                        match_bookmaker_odds = request.response.body
-                    if BR_MATCH_TIMELINE_DELTA in request.url:
-                        match_timeline_delta = request.response.body
-
-                if (
-                    match_details and match_details_extended
-                    and stats_match_form and match_timeline_delta and match_bookmaker_odds
-                ):
-                    break
-
-            period, match_time, betradar_id_match = (None, None, None)
             try:
-                page_source = self._driver.page_source
-                soup = BeautifulSoup(page_source, 'lxml')
-
-                bets_source_tag = soup.find('div', {'data-atid': 'tlv-detail-bets'})
-                bets_source = str(bets_source_tag.contents)
-
-                match_timer = soup.find('div', {'data-atid': 'match-timer'})
-                period = match_timer.contents[0].contents[0]
-                match_time = match_timer.contents[1].contents[0]
-
-                stats = soup.find_all('div', {'data-sr-widget': 'match.generalstatistics'})
-                betradar_id_match = json.loads(stats[0].attrs['data-sr-input-props'])['matchId']
+                tournament = soup.find('span', {'class': 'ellipsis c-white px-10'}).contents[0]
+                home_team = soup.find('span', {'data-atid': 'scoreboard-opponent-home'}).contents[0]
+                away_team = soup.find('span', {'data-atid': 'scoreboard-opponent-away'}).contents[0]
+                total_score = soup.find('span', {'data-atid': 'tlv-matchDetail-totalScore'}).contents[0]
             except Exception:
+                return None
+
+            try:
+
+                statistic_button = self._driver.find_element(By.XPATH, "//button[@data-tab-id='generalStatistics']")
+                statistic_button.click()
+                time.sleep(5)
+
+                (match_details, match_details_extended, stats_match_form,
+                 match_timeline_delta, match_bookmaker_odds, match_info) = (None, None, None, None, None, None)
+
+                for request in reversed(self._driver.requests):
+                    if request.response:
+                        # str_data = gzip.decompress(request.response.body)
+                        # data = json.loads(str_data)
+                        # print(data)
+                        if BR_MATCH_DETAILS in request.url:
+                            match_details = request.response.body
+                        if BR_MATCH_DETAILS_EXTENDED in request.url:
+                            match_details_extended = request.response.body
+                        if BR_MATCH_INFO in request.url:
+                            match_info = request.response.body
+                        if BR_STATS_MATCH_FORM in request.url:
+                            stats_match_form = request.response.body
+                        if BR_MATCH_BOOKMAKER_ODDS in request.url:
+                            match_bookmaker_odds = request.response.body
+                        if BR_MATCH_TIMELINE_DELTA in request.url:
+                            match_timeline_delta = request.response.body
+
+                    if (
+                        match_details and match_details_extended
+                        and stats_match_form and match_timeline_delta and match_bookmaker_odds
+                    ):
+                        break
+
+                period, match_time, betradar_id_match = (None, None, None)
+                try:
+                    page_source = self._driver.page_source
+                    soup = BeautifulSoup(page_source, 'lxml')
+
+                    bets_source_tag = soup.find('div', {'data-atid': 'tlv-detail-bets'})
+                    bets_source = str(bets_source_tag.contents)
+
+                    match_timer = soup.find('div', {'data-atid': 'match-timer'})
+                    period = match_timer.contents[0].contents[0]
+                    match_time = match_timer.contents[1].contents[0]
+
+                    stats = soup.find_all('div', {'data-sr-widget': 'match.generalstatistics'})
+                    betradar_id_match = json.loads(stats[0].attrs['data-sr-input-props'])['matchId']
+                except Exception:
+                    pass
+
+                result = NikeFootballMatchSnapshot(
+                    id_match=id_match,
+                    betradar_id_match=betradar_id_match,
+                    period=period,
+                    tournament=tournament,
+                    home_team=home_team,
+                    away_team=away_team,
+                    total_score=total_score,
+                    match_time=match_time,
+                    match_details=match_details,
+                    match_details_extended=match_details_extended,
+                    stats_match_form=stats_match_form,
+                    match_bookmaker_odds=match_bookmaker_odds,
+                    match_timeline_delta=match_timeline_delta,
+                    match_info=match_info,
+                    page_source=gzip.compress(bytes(bets_source, 'utf8'))
+                )
+
+                result.save()
+                time.sleep(30)
+            except Exception as e:
                 pass
-
-            result = NikeFootballMatchSnapshot(
-                id_match=id_match,
-                betradar_id_match=betradar_id_match,
-                period=period,
-                tournament=tournament,
-                home_team=home_team,
-                away_team=away_team,
-                total_score=total_score,
-                match_time=match_time,
-                match_details=match_details,
-                match_details_extended=match_details_extended,
-                stats_match_form=stats_match_form,
-                match_bookmaker_odds=match_bookmaker_odds,
-                match_timeline_delta=match_timeline_delta,
-                match_info=match_info,
-                page_source=gzip.compress(bytes(bets_source, 'utf8'))
-            )
-
-            result.save()
-            return result
-
-            #match_scoreboard = soup.find('div', {'data-sr-widget': 'match.scoreboard'})
-            #if (match_scoreboard):
-            #    print(match_scoreboard)
-
-            #statistic_button = self._driver.find_element(By.XPATH, "//button[@data-tab-id='generalStatistics']")
-            #statistic_button = self._driver.find_element(By.XPATH, "//button[@data-tab-id='headToHead']")
-            #statistic_button.click()
-
-            #time.sleep(5)
-            #main_statistics = self._driver.find_element(By.XPATH, value="//div[contains(text(), 'Hlavná štatistika')]")
-            #main_statistics.click()
-
-            #time.sleep(1)
-            #main_statistics_button = main_statistics.find_element(By.XPATH, '..')
-            #main_statistics_button.click()
-            #from selenium.webdriver.common.action_chains import ActionChains
-            #ActionChains(self._driver).move_to_element(main_statistics_button).click().perform()
-            #time.sleep(1)
-
-            #for i in self._driver.get_log('performance'):
-            #    import json
-            #    message = json.loads(i['message'])
-            #    try:
-            #        print(message['message']['params']['request']['url'])
-            #    except:
-            #        pass
-
-            #main_statistics_2 = self._driver.find_element(By.XPATH, value="//div[contains(text(), 'Hlavná štatistika')]//..")
-
-            #main_statistics = soup.find('button', {'class': 'infocentre-holder-with-loader-title text-extra-bold py-10 px-20 fs-14 c-black-100 bg-black-5 full-width text-left flex justify-between align-middle'})
-            #main_statistics.click()
-            #main_statistics_2.click()
-            #self._driver.switch_to.default_content()
-            #time.sleep(2)
-
-            #self._driver.execute_async_script()
-            #self._driver.get_screenshot_as_file('screenshot.png')
-
-
-
-            #self._driver.get(self._NIKE_LIVE_FOOTBALL_MATCH_URL.format(id_match))
-            #self._driver.refresh()
-            #page_source = self._driver.page_source
-            #soup = BeautifulSoup(page_source, 'lxml')
-
-            #stats = soup.find_all('div', {'class': 'sr-general-statistics__labels'})
-            #stats = soup.find_all('div', {'class': 'sr-general-statistics__stats-wrapper'})
-
-        except Exception as e:
-            pass
-        return None

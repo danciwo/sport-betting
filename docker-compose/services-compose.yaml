@@ -1,0 +1,31 @@
+version: '3.3'
+
+services:
+  db:
+    image: mysql
+    command: --default-authentication-plugin=mysql_native_password
+    restart: always
+    networks:
+      - backend
+    ports:
+      - "33061:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_USER: scraper
+      MYSQL_PASSWORD: scraper123
+    volumes:
+      - scraper-db:/var/lib/mysql
+
+  rabbit-mq:
+    image: rabbitmq:3-management
+    networks:
+      - backend
+    ports:
+      - "15672:15672"
+      - "5672:5672"
+
+volumes:
+  scraper-db:
+
+networks:
+  backend:
