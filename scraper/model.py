@@ -1,4 +1,6 @@
 import datetime
+import gzip
+import json
 from peewee import *
 import pymysql
 
@@ -32,6 +34,41 @@ class NikeFootballMatchSnapshot(Model):
     class Meta:
         database = db
 
+    @property
+    def data_match_details(self):
+        if not self.match_details:
+            return None
+        return json.loads(gzip.decompress(self.match_details).decode(encoding='utf-8'))
+
+    @property
+    def data_match_details_extented(self):
+        if not self.match_details_extended:
+            return None
+        return json.loads(gzip.decompress(self.match_details_extended).decode(encoding='utf-8'))
+
+    @property
+    def data_stats_match_form(self):
+        if not self.stats_match_form:
+            return None
+        return json.loads(gzip.decompress(self.stats_match_form).decode(encoding='utf-8'))
+
+    @property
+    def data_match_timeline_delta(self):
+        if not self.match_timeline_delta:
+            return None
+        return json.loads(gzip.decompress(self.match_timeline_delta).decode(encoding='utf-8'))
+
+    @property
+    def data_match_bookmaker_odds(self):
+        if not self.match_bookmaker_odds:
+            return None
+        return json.loads(gzip.decompress(self.match_bookmaker_odds).decode(encoding='utf-8'))
+
+    @property
+    def data_match_info(self):
+        if not self.match_info:
+            return None
+        return json.loads(gzip.decompress(self.match_info).decode(encoding='utf-8'))
 
 #db.connect()
 try:

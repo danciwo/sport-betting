@@ -2,6 +2,7 @@ import time
 import re
 import json
 import gzip
+import datetime
 
 from selenium import webdriver
 #from selenium.webdriver import Chrome
@@ -129,17 +130,17 @@ class NikeCrawler:
                         # data = json.loads(str_data)
                         # print(data)
                         if BR_MATCH_DETAILS in request.url:
-                            match_details = request.response.body
+                            match_details = request.response.body if not match_details else match_details
                         if BR_MATCH_DETAILS_EXTENDED in request.url:
-                            match_details_extended = request.response.body
+                            match_details_extended = request.response.body if not match_details_extended else match_details_extended
                         if BR_MATCH_INFO in request.url:
-                            match_info = request.response.body
+                            match_info = request.response.body if not match_info else match_info
                         if BR_STATS_MATCH_FORM in request.url:
-                            stats_match_form = request.response.body
+                            stats_match_form = request.response.body if not stats_match_form else stats_match_form
                         if BR_MATCH_BOOKMAKER_ODDS in request.url:
-                            match_bookmaker_odds = request.response.body
+                            match_bookmaker_odds = request.response.body if not match_bookmaker_odds else match_bookmaker_odds
                         if BR_MATCH_TIMELINE_DELTA in request.url:
-                            match_timeline_delta = request.response.body
+                            match_timeline_delta = request.response.body if not match_timeline_delta else match_timeline_delta
 
                     if (
                         match_details and match_details_extended
@@ -179,7 +180,8 @@ class NikeCrawler:
                     match_bookmaker_odds=match_bookmaker_odds,
                     match_timeline_delta=match_timeline_delta,
                     match_info=match_info,
-                    page_source=gzip.compress(bytes(bets_source, 'utf8'))
+                    page_source=gzip.compress(bytes(bets_source, 'utf8')),
+                    timestamp=datetime.datetime.utcnow()
                 )
 
                 result.save()
