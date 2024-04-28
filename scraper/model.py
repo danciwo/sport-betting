@@ -4,9 +4,12 @@ import pymysql
 
 db = MySQLDatabase('sport_betting', host='127.0.0.1', port=6603, user='root', password='12345')
 
+class NikeMatch(Model):
+    id_match = CharField(index=True)
+    betradar_id_match = CharField(default=None, null=True, index=True)
+
 
 class NikeFootballMatchSnapshot(Model):
-
     id_match = CharField(index=True)
     betradar_id_match = CharField(default=None, null=True, index=True)
     tournament = CharField(default=None, null=True, index=True)
