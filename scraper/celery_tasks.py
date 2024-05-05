@@ -3,7 +3,7 @@ from scraper import celeryconfig
 
 from scraper.nike import NikeCrawler
 
-app = Celery(config_source=celeryconfig)
+app = Celery(config_source=celeryconfig.__name__)
 
 #@app.task(bind=True)
 #def find_live_matches(self, ):
