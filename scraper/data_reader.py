@@ -2,7 +2,7 @@ import gzip
 import json
 import pprint
 
-from nike import NikeCrawler
+#from nike import NikeCrawler
 from model import NikeFootballMatchSnapshot
 
 def main():

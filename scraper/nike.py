@@ -4,7 +4,7 @@ import json
 import gzip
 import datetime
 
-from selenium import webdriver
+#from selenium import webdriver
 #from selenium.webdriver import Chrome
 from seleniumwire import webdriver
 from selenium.webdriver.common.by import By

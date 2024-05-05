@@ -1,7 +1,7 @@
 from celery import Celery
-import celeryconfig
+from scraper import celeryconfig
 
-from nike import NikeCrawler
+from scraper.nike import NikeCrawler
 
 app = Celery(config_source=celeryconfig)
 

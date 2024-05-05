@@ -3,7 +3,6 @@ import gzip
 import json
 from enum import Enum
 from peewee import *
-import pymysql
 
 db = MySQLDatabase('sport_betting', host='127.0.0.1', port=6603, user='root', password='12345')
 
