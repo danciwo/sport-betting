@@ -4,7 +4,7 @@ import json
 from enum import Enum
 from peewee import *
 
-db = MySQLDatabase('sport_betting', host='127.0.0.1', port=6603, user='root', password='12345')
+db = MySQLDatabase('sport_betting', host='127.0.0.1', port=33061, user='root', password='root123')
 
 
 class MatchDetailsExtendedIndex(Enum):
