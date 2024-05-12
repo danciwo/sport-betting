@@ -1,8 +1,11 @@
 from celery import Celery
-from scraper import celeryconfig
+#from scraper import celeryconfig
+#from scraper.nike import NikeCrawler
+import celeryconfig
+from nike import NikeCrawler
+import os
 
-from scraper.nike import NikeCrawler
-
+print(os.getcwd())
 app = Celery(config_source=celeryconfig.__name__)
 
 #@app.task(bind=True)

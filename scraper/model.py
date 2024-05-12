@@ -36,10 +36,27 @@ class MatchDetailsExtendedIndex(Enum):
 class NikeMatch(Model):
     id_match = CharField(index=True)
     betradar_id_match = CharField(default=None, null=True, index=True)
+    result = CharField(default=None, null=True)
+
+    timestamp = DateTimeField(default=datetime.datetime.utcnow())
+
+    class Meta:
+        database = db
+
+    def __iter__(self):
+        for s in self.match_snapshots():
+            yield s
+
+    @property
+    def match_snapshots(self):
+        return NikeFootballMatchSnapshot.select().join(NikeMatch).where(
+            NikeFootballMatchSnapshot.id_match == self.id_match
+        )
 
 
 class NikeFootballMatchSnapshot(Model):
     id_match = CharField(index=True)
+    #id_match = ForeignKeyField(NikeMatch, backref='id_match')
     betradar_id_match = CharField(default=None, null=True, index=True)
     tournament = CharField(default=None, null=True, index=True)
     home_team = CharField(default=None, null=True, index=True)
@@ -131,22 +148,29 @@ class NikeFootballMatchSnapshot(Model):
 
     def match_details_extended_item(self, index: MatchDetailsExtendedIndex) -> (int, int):
 
-        if index not in self.data_match_details_extented['doc'][0]['data']['values'][index]:
+        if index.value not in self.data_match_details_extented['doc'][0]['data']['values']:
             # TODO: what return on non existing value?
             return -1, -1
 
         return (
-            self.data_match_details_extented['doc'][0]['data']['values'][index]['value']['home'],
-            self.data_match_details_extented['doc'][0]['data']['values'][index]['value']['away']
+            self.data_match_details_extented['doc'][0]['data']['values'][index.value]['value']['home'],
+            self.data_match_details_extented['doc'][0]['data']['values'][index.value]['value']['away']
         )
 
     @property
     def get_match_details_extended_dna(self):
-        pass
-
+        period = self.match_period
+        period_time = self.period_time_seconds
+        corners = self.match_details_extended_item(index=MatchDetailsExtendedIndex.CORNERS)
+        dangerous_attack = self.match_details_extended_item(index=MatchDetailsExtendedIndex.DANGEROUS_ATTACK)
+        ball_posession = self.match_details_extended_item(index=MatchDetailsExtendedIndex.BALL_POSSESSION)
+        free_kicks = self.match_details_extended_item(index=MatchDetailsExtendedIndex.FREE_KICKS)
+        # TODO: parse all data
+        return (period, period_time, corners)
 
 #db.connect()
 try:
-    db.create_tables([NikeFootballMatchSnapshot])
+    db.create_tables([NikeMatch])
+    #db.create_tables([NikeFootballMatchSnapshot])
 except Exception as e:
     print(e)

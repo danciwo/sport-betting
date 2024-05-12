@@ -11,7 +11,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 from bs4 import BeautifulSoup
 
-from model import NikeFootballMatchSnapshot
+from model import NikeFootballMatchSnapshot, NikeMatch
 
 #import base
 #from base import Crawler
@@ -57,7 +57,7 @@ class NikeCrawler:
         capabilities["goog:loggingPrefs"] = {"performance": "ALL"}
 
         self._webdriver_options = webdriver.ChromeOptions()
-        #self._webdriver_options.add_argument('--headless')
+        self._webdriver_options.add_argument('--headless')
         self._webdriver_options.add_argument("--enable-javascript")
         self._webdriver_options.page_load_strategy = 'normal'
 
@@ -90,6 +90,8 @@ class NikeCrawler:
         return matches
 
     def process_match(self, id_match):
+
+        nike_match = None
 
         match_url = self._NIKE_LIVE_FOOTBALL_MATCH_URL.format(id_match)
         self._driver.get(match_url)
@@ -164,6 +166,17 @@ class NikeCrawler:
                     betradar_id_match = json.loads(stats[0].attrs['data-sr-input-props'])['matchId']
                 except Exception:
                     pass
+
+                if not betradar_id_match:
+                    break
+
+                if nike_match is None:
+                    nike_match = NikeMatch(
+                        id_match=id_match,
+                        betradar_id_match=betradar_id_match,
+                        timestamp=datetime.datetime.utcnow()
+                    )
+                    nike_match.save()
 
                 result = NikeFootballMatchSnapshot(
                     id_match=id_match,
